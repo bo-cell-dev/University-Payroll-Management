@@ -102,3 +102,4 @@ void BaseFile::deleteRecord(const std::string& key) {
 
     file.close();
 }
+

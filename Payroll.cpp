@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <clocale> 
+#include <iomanip>
 
 PayLists::PayLists() {}
 
@@ -17,19 +19,30 @@ void PayLists::loadAdditions(const std::string& rulesFile) {
         return;
     }
     std::string line;
-    int i = 0;
+    size_t i = 0;
     std::vector<std::string> additionNames = { "Повышение за стаж", "Повышение по контракту", "Премия месячная", "Повышение за молодого специалиста" };
+
+    char* old_locale = std::setlocale(LC_NUMERIC, nullptr);
+    std::string saved_locale = old_locale ? old_locale : "C";
+    std::setlocale(LC_NUMERIC, "C");
+
     while (std::getline(file, line)) {
+        while (!line.empty() && (line.back() == '\r' || line.back() == '\n' || line.back() == ' ')) {
+            line.pop_back();
+        }
+        if (line.empty()) continue;
+
         try {
             double value = std::stod(line);
             additions[additionNames[i]] = value;
             i++;
         }
         catch (const std::invalid_argument&) {
-            std::cout << "Ошибка: некорректное значение в файле " << rulesFile << std::endl;
+            std::cout << "Ошибка в rules.txt" << std::endl;
         }
     }
     file.close();
+    std::setlocale(LC_NUMERIC, saved_locale.c_str());
 }
 
 void PayLists::loadDeductions(const std::string& rulesFile) {
@@ -40,19 +53,32 @@ void PayLists::loadDeductions(const std::string& rulesFile) {
     }
     std::string line;
     std::vector<std::string> deductionNames = { "Аванс", "Пенсионный фонд", "Налог" };
-    int i = 0;
+    size_t i = 0;
+
+    char* old_locale = std::setlocale(LC_NUMERIC, nullptr);
+    std::string saved_locale = old_locale ? old_locale : "C";
+    std::setlocale(LC_NUMERIC, "C");
+
     while (std::getline(file, line)) {
+        while (!line.empty() && (line.back() == '\r' || line.back() == '\n' || line.back() == ' ')) {
+            line.pop_back();
+        }
+        if (line.empty()) continue;
+
         try {
             double value = std::stod(line);
             deductions[deductionNames[i]] = value;
             i++;
         }
         catch (const std::invalid_argument&) {
-            std::cout << "Ошибка: некорректное значение в файле " << rulesFile << std::endl;
+            std::cout << "Ошибка в файле" << std::endl;
         }
     }
     file.close();
+    std::setlocale(LC_NUMERIC, saved_locale.c_str());
 }
+
+
 
 std::map<std::string, bool> PayLists::loadEmployeeAdditions(const std::string& rulesFile, const std::string& fullName) {
     std::ifstream file(rulesFile);
@@ -160,6 +186,7 @@ void Reports::reportForEmployee(PayLists& payLists, const std::string& fullName,
     double nSalary = payLists.getNetSalary(fullName, baseSalary, rules2File, rulesFile, rules3File);
     if (nSalary > 0.0) {
         std::cout << "\nОтчет для сотрудника: " << fullName << std::endl;
+        std::cout << std::fixed << std::setprecision(0);
         std::cout << "Оклад: " << baseSalary << std::endl;
         std::cout << "К выплате: " << nSalary << std::endl;
     }
